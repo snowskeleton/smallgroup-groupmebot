@@ -14,22 +14,13 @@ app = Flask(__name__)
 def send_message(text: str):
     url = "https://api.groupme.com/v3/bots/post"
     data = {"bot_id": BOT_ID, "text": text}
-    resp = requests.post(url, json=data)
-    if resp.ok:
-        try:
-            message_id = resp.json().get("response", {}).get("message_id")
-            if message_id:
-                created_at = resp.json().get("response", {}).get("created_at", 0)
-                group_id = resp.json().get("response", {}).get("group_id", "")
-                sender_id = resp.json().get("response", {}).get("sender_id", "")
-                storage.add_message(message_id, created_at,
-                                    group_id, sender_id)
-        except Exception as e:
-            print(f"Failed to track message ID: {e}")
+    requests.post(url, json=data)
+
 
 @app.route("/healthcheck", methods=["GET"])
 def healthcheck():
     return "ok", 200
+
 
 @app.route("/new_event", methods=["POST"])
 def new_event():
@@ -37,13 +28,32 @@ def new_event():
     # print(data)
     sender = data.get("name")
     text = data.get("text")
+    message_id = data.get("id")
+    created_at = data.get("created_at", 0)
+    group_id = data.get("group_id", "")
+    sender_id = data.get("sender_id", "")
 
+    if to_or_from_the_bot(sender, text):
+        storage.add_message(message_id, created_at, group_id, sender_id)
+
+    # Only process messages from others that are commands
     if sender != BOT_NAME and text:
         response = process_message(sender, text)
         if response:
             send_message(response)
 
     return "ok", 200
+
+
+def to_or_from_the_bot(sender: str, text: str):
+    if not text:
+        return False
+    if sender == BOT_NAME:
+        return True
+    if text.startswith("/"):
+        return True
+    return False
+
 
 @app.route("/", methods=["POST", "GET"])
 def callback():

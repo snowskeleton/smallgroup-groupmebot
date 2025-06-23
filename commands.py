@@ -1,6 +1,6 @@
 import sys
-# import requests
-import storage
+import requests
+from storage import get_all_messages, clear_messages, get_token
 
 from bot_secrets import CLIENT_ID, REDIRECT_URI
 def echo(sender: str, args: str) -> str:
@@ -28,22 +28,22 @@ def ping(sender: str, args: str) -> str:
 
 
 def clear(sender: str, args: str) -> str:
-    """Deletes recent bot messages from the chat."""
-    message_ids = storage.get_all_messages()
+    """Deletes recent bot messages from the chat. (Requires admin authentication with the /authenticate command)"""
+    messages = get_all_messages()
+    token = get_token()
+    if not token:
+        return "No access token found. Please authenticate with /authenticate."
+
     success_count = 0
+    for msg_id, _, group_id, _ in messages:
+        url = f"https://api.groupme.com/v3/conversations/{group_id}/messages/{msg_id}?token={token}"
+        resp = requests.delete(url)
+        if resp.ok:
+            success_count += 1
+        else:
+            print(f"Failed to delete {msg_id}: {resp.status_code} {resp.text}")
 
-    for msg_id in message_ids:
-        url = f"https://api.groupme.com/v3/bots/post"
-        # GroupMe doesn't provide a message deletion API for bots; adjust if full API access exists
-        # Assuming privileged token use:
-        # url = f"https://api.groupme.com/v3/groups/{GROUP_ID}/messages/{msg_id}"
-        # requests.delete(url, headers={"X-Access-Token": USER_ACCESS_TOKEN})
-
-        # For placeholder logic:
-        print(f"Pretend deleting message: {msg_id}")
-        success_count += 1
-
-    storage.clear_messages()
+    clear_messages()
     return f"Cleared {success_count} recent bot messages."
 
 

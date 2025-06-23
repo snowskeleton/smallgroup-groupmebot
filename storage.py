@@ -5,6 +5,7 @@ DB_PATH = "messages.db"
 
 def init_db():
     conn = sqlite3.connect(DB_PATH)
+    print("[DEBUG] Running init_db()")
     c = conn.cursor()
     c.execute("""
         CREATE TABLE IF NOT EXISTS messages (
@@ -12,6 +13,12 @@ def init_db():
             created_at INTEGER,
             group_id TEXT,
             sender_id TEXT
+        )
+    """)
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS credentials (
+            id INTEGER PRIMARY KEY,
+            token TEXT
         )
     """)
     conn.commit()
@@ -50,12 +57,6 @@ def save_token(token: str):
     print(token)
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-    c.execute("""
-        CREATE TABLE IF NOT EXISTS credentials (
-            id INTEGER PRIMARY KEY,
-            token TEXT
-        )
-    """)
     c.execute(
         "INSERT OR REPLACE INTO credentials (id, token) VALUES (1, ?)", (token,))
     conn.commit()
