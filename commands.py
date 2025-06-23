@@ -3,13 +3,17 @@ import requests
 from storage import get_all_messages, clear_messages, get_token
 
 from bot_secrets import CLIENT_ID, REDIRECT_URI
+
+
 def echo(sender: str, args: str) -> str:
     """Repeats whatever text the user provides."""
     return args if args else "(nothing to echo)"
 
+
 def hello(sender: str, args: str) -> str:
     """Responds with a greeting."""
     return f"Hi, {sender}!"
+
 
 def help(sender: str, args: str) -> str:
     """Prints this message"""
@@ -21,6 +25,7 @@ def help(sender: str, args: str) -> str:
             doc = func.__doc__ or "(no description)"
             response_lines.append(f"/{name} - {doc}")
     return "\n".join(response_lines)
+
 
 def ping(sender: str, args: str) -> str:
     """Responds with 'Pong!'."""
