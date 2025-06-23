@@ -1,0 +1,5 @@
+BOT_ID = ""
+BOT_NAME = ""
+CLIENT_ID = ""
+CLIENT_SECRET = ""
+REDIRECT_URI = ""

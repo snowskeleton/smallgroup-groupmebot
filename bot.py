@@ -5,15 +5,27 @@ import time
 import difflib
 
 import commands
+import storage
+
+from bot_secrets import *
 
 app = Flask(__name__)
-BOT_ID = "80e62ea5791dc1f37728b7ff2d"
-BOT_NAME = "Test Bot"
 
 def send_message(text: str):
     url = "https://api.groupme.com/v3/bots/post"
     data = {"bot_id": BOT_ID, "text": text}
-    requests.post(url, json=data)
+    resp = requests.post(url, json=data)
+    if resp.ok:
+        try:
+            message_id = resp.json().get("response", {}).get("message_id")
+            if message_id:
+                created_at = resp.json().get("response", {}).get("created_at", 0)
+                group_id = resp.json().get("response", {}).get("group_id", "")
+                sender_id = resp.json().get("response", {}).get("sender_id", "")
+                storage.add_message(message_id, created_at,
+                                    group_id, sender_id)
+        except Exception as e:
+            print(f"Failed to track message ID: {e}")
 
 @app.route("/healthcheck", methods=["GET"])
 def healthcheck():
@@ -22,7 +34,7 @@ def healthcheck():
 @app.route("/new_event", methods=["POST"])
 def new_event():
     data = request.get_json()
-    print(data)
+    # print(data)
     sender = data.get("name")
     text = data.get("text")
 
@@ -36,6 +48,41 @@ def new_event():
 @app.route("/", methods=["POST", "GET"])
 def callback():
     return "ok", 200
+
+
+@app.route("/oauth/callback", methods=["GET"])
+def oauth_callback():
+    token = request.args.get("access_token")
+    if token:
+        storage.save_token(token)
+        return "Authentication complete. Token saved."
+
+    # Fallback: standard code exchange
+    code = request.args.get("code")
+    if not code:
+        return "Missing code parameter", 400
+
+    token_url = "https://api.groupme.com/oauth/access_token"
+
+    payload = {
+        "client_id": CLIENT_ID,
+        "client_secret": CLIENT_SECRET,
+        "code": code,
+        "redirect_uri": REDIRECT_URI
+    }
+
+    resp = requests.post(token_url, data=payload)
+
+    if resp.ok:
+        access_token = resp.json().get("access_token")
+        if access_token:
+            storage.save_token(access_token)
+            return "Authentication complete. Token saved."
+        else:
+            return "Failed to retrieve access token.", 500
+    else:
+        return f"Error during token exchange: {resp.text}", 500
+
 
 # Periodic message thread
 def periodic_messages():
@@ -68,7 +115,20 @@ def process_message(sender: str, text: str) -> str | None:
     else:
         return f"Unknown command '/{command}'. Type '/help' to see available commands."
 
+
+def check_secrets():
+    """Ensure all uppercase variables in bot_secrets are non-empty."""
+    import bot_secrets
+    for key in dir(bot_secrets):
+        if key.isupper():
+            value = getattr(bot_secrets, key)
+            if not value:
+                raise ValueError(f"Missing or empty secret: {key}")
+
+
 threading.Thread(target=periodic_messages, daemon=True).start()
 
 if __name__ == "__main__":
+    check_secrets()
+    storage.init_db()
     app.run(host="0.0.0.0", port=5001, debug=True)
