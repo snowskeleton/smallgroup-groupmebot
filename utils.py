@@ -48,10 +48,8 @@ def periodic_messages():
     local_tz = timezone("America/New_York")
 
     while True:
-        print("starting scheduled message")
         schedule = storage.get_schedule()
         if schedule:
-            print("we have a schedule")
 
             now = datetime.now(local_tz)
             base = now.replace(second=0, microsecond=0)
@@ -59,16 +57,8 @@ def periodic_messages():
             cron = croniter(schedule, base, ret_type=datetime)
             next_run = cron.get_next(datetime)
 
-            print("Now:\t", now)
-            print("Next:\t", next_run)
-
             if base <= next_run < (base + timedelta(minutes=1)):
-                print("Now!")
                 send_weekly_summary(sheet_url, creds_path)
-            else:
-                print("Not now :(")
-        else:
-            print("No schedule applied")
 
         time.sleep(60)
 
