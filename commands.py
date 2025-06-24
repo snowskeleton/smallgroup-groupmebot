@@ -2,7 +2,7 @@ import requests
 
 from typing import Callable
 
-from storage import get_all_messages, clear_messages, get_token, save_schedule
+from storage import get_all_messages, clear_messages, get_token, save_schedule, get_sheet_link, save_sheet_link
 
 from bot_secrets import CLIENT_ID, REDIRECT_URI
 
@@ -74,8 +74,47 @@ def authenticate(sender: str, args: str) -> str:
 
 @command
 def schedule(sender: str, args: str) -> str:
-    """Updates the posting schedule. Format should be cron-like (e.g., '* * * * *')."""
-    if not args:
-        return "Please provide a cron-style schedule (e.g., '* * * * *')."
-    save_schedule(args.strip())
-    return f"Updated posting schedule to: {args.strip()}"
+    """Manage or view the posting schedule. Subcommands: show [count], set <cron>, link <sheet url>."""
+    parts = args.strip().split(maxsplit=1)
+    subcommand = parts[0].lower() if parts else "show"
+    remainder = parts[1] if len(parts) > 1 else ""
+
+    # defaults to 'show 3'
+    if subcommand == "show":
+        return schedule_show(remainder)
+
+    if subcommand == "set":
+        return schedule_set(remainder)
+
+    if subcommand == "link":
+        return schedule_link(remainder)
+
+    return "Unknown subcommand.\nUsage:\n\t/schedule show [count]\n\t/schedule set <cron expression>\n\t/schedule link <google sheets link>"
+
+
+def schedule_show(count: str) -> str:
+    working_count = 3
+    if count.isdigit():
+        working_count = int(count)
+    sheet_url = get_sheet_link()
+    if not sheet_url:
+        return "No sheet link saved. Please run `/schedule link <google sheets link>`"
+    creds_path = "credentials.json"
+    from utils import format_upcoming_events
+    return format_upcoming_events(sheet_url, creds_path, working_count)
+
+
+def schedule_set(schedule: str) -> str:
+    if not schedule:
+        return "Please provide a cron expression (e.g., '* * * * *')."
+    stripped_schedule = schedule.strip()
+    save_schedule(stripped_schedule)
+    return f"Updated posting schedule to: {stripped_schedule}"
+
+
+def schedule_link(link: str) -> str:
+    if not link:
+        return "Please provide the Google Sheet URL."
+    stripped_link = link.strip()
+    save_sheet_link(stripped_link)
+    return f"Updated sheet link to: {stripped_link}"

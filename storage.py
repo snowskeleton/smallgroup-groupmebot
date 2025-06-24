@@ -94,3 +94,21 @@ def get_schedule() -> str | None:
     row = c.fetchone()
     conn.close()
     return row[0] if row else None
+
+
+def save_sheet_link(link: str):
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute(
+        "INSERT OR REPLACE INTO settings (key, value) VALUES ('link', ?)", (link,))
+    conn.commit()
+    conn.close()
+
+
+def get_sheet_link() -> str | None:
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute("SELECT value FROM settings WHERE key = 'link'")
+    row = c.fetchone()
+    conn.close()
+    return row[0] if row else None
