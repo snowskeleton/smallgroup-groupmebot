@@ -28,6 +28,7 @@ def hello(sender: str, args: str) -> str:
     return f"Hi, {sender}!"
 
 
+@command
 def help(sender: str, args: str) -> str:
     """Prints this message"""
     response_lines = ["Available commands:"]
