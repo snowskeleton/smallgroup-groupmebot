@@ -1,3 +1,10 @@
+from croniter import croniter
+from datetime import datetime, timedelta
+from pytz import timezone
+
+import storage
+import gspread
+from google.oauth2.service_account import Credentials
 import requests
 import time
 
@@ -34,9 +41,36 @@ def send_message(text: str):
 
 
 def periodic_messages():
+    sheet_url = "https://docs.google.com/spreadsheets/d/15_tEo1xDxY-_dDur1Gfg3Ve2bcEnXAFlSnaaaF3l9GY"
+    creds_path = "credentials.json"
+
+    # Change to your actual timezone
+    local_tz = timezone("America/New_York")
+
     while True:
-        time.sleep(3600)  # every hour
-        send_message("Just checking in!")
+        print("starting scheduled message")
+        schedule = storage.get_schedule()
+        if schedule:
+            print("we have a schedule")
+
+            now = datetime.now(local_tz)
+            base = now.replace(second=0, microsecond=0)
+
+            cron = croniter(schedule, base, ret_type=datetime)
+            next_run = cron.get_next(datetime)
+
+            print("Now:\t", now)
+            print("Next:\t", next_run)
+
+            if base <= next_run < (base + timedelta(minutes=1)):
+                print("Now!")
+                send_weekly_summary(sheet_url, creds_path)
+            else:
+                print("Not now :(")
+        else:
+            print("No schedule applied")
+
+        time.sleep(60)
 
 
 def process_message(sender: str, text: str) -> str | None:
@@ -64,3 +98,72 @@ def process_message(sender: str, text: str) -> str | None:
         return f"Unknown command '/{command}'. Type '/help' to see available commands."
 
 
+def get_sheet_data(sheet_url: str, creds_path: str) -> list[tuple[str, list[list[str]]]]:
+    """Fetch all rows from all worksheets of the given Google Sheet."""
+    scopes = ["https://www.googleapis.com/auth/spreadsheets.readonly"]
+    creds = Credentials.from_service_account_file(  # type: ignore
+        creds_path, scopes=scopes)  # type: ignore
+    gc = gspread.authorize(creds)
+    sheet = gc.open_by_url(sheet_url)
+    return [(ws.title, ws.get_all_values()) for ws in sheet.worksheets()]
+
+
+def send_weekly_summary(sheet_url: str, creds_path: str):
+    """Sends a GroupMe message with the next 3 upcoming events from the spreadsheet."""
+    all_data = get_sheet_data(sheet_url, creds_path)
+
+    schedule_data = []
+    people_data = []
+
+    for title, rows in all_data:
+        if "Schedule" in title:
+            schedule_data = rows
+        elif "Names + Addresses" in title:
+            people_data = rows
+
+    if not schedule_data or not people_data:
+        send_message("Error: Could not find required sheets.")
+        return
+
+    # Build name to address map
+    name_to_address = {}
+    for row in people_data[1:]:
+        name = row[0]
+        address = row[3] if len(row) > 3 else ""
+        if name and address:
+            name_to_address[name.strip().lower()] = address.strip()
+
+    # Filter for upcoming events
+    from datetime import datetime
+
+    now = datetime.now()
+    upcoming = []
+    for row in schedule_data[1:]:
+        try:
+            event_date = datetime.strptime(row[0], "%m/%d/%Y")
+            if event_date >= now:
+                upcoming.append(row)
+        except Exception:
+            continue
+
+    upcoming.sort(key=lambda x: datetime.strptime(x[0], "%m/%d/%Y"))
+    upcoming = upcoming[:3]
+
+    # Format message
+    message = "Upcoming Events:\n\n"
+    for row in upcoming:
+        date, leader, location_name, dessert, notes = (row + [""] * 5)[:5]
+
+        location_key = location_name.strip().lower() if location_name else ""
+        location_display = name_to_address.get(location_key, location_name)
+
+        message += f"{datetime.strptime(date, '%m/%d/%Y').strftime('%a %b %d %Y')}\n"
+        message += f"Leader: {leader}\nLocation: {location_display}"
+        if dessert:
+            message += f"\nDessert: {dessert}"
+        if notes:
+            message += f"\nNotes: {notes}"
+        message += "\n\n"
+
+    # Send to GroupMe
+    send_message(message)

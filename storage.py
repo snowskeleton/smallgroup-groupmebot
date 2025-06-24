@@ -21,6 +21,12 @@ def init_db():
             token TEXT
         )
     """)
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS settings (
+            key TEXT PRIMARY KEY,
+            value TEXT
+        )
+    """)
     conn.commit()
     conn.close()
 
@@ -67,6 +73,24 @@ def get_token() -> str | None:
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute("SELECT token FROM credentials WHERE id = 1")
+    row = c.fetchone()
+    conn.close()
+    return row[0] if row else None
+
+
+def save_schedule(schedule: str):
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute(
+        "INSERT OR REPLACE INTO settings (key, value) VALUES ('schedule', ?)", (schedule,))
+    conn.commit()
+    conn.close()
+
+
+def get_schedule() -> str | None:
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute("SELECT value FROM settings WHERE key = 'schedule'")
     row = c.fetchone()
     conn.close()
     return row[0] if row else None
