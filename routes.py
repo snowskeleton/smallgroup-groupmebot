@@ -24,6 +24,7 @@ def new_event():
     group_id = data.get("group_id", "")
     sender_id = data.get("sender_id", "")
 
+    storage.save_group_id(group_id)
     if to_or_from_the_bot(sender, text):
         storage.add_message(message_id, created_at, group_id, sender_id)
 

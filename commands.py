@@ -2,9 +2,10 @@ import requests
 
 from typing import Callable
 
-from storage import get_all_messages, clear_messages, get_token, save_schedule, get_sheet_link, save_sheet_link
+from storage import get_all_messages, clear_messages, get_token, save_schedule, save_sheet_link
 
 from bot_secrets import CLIENT_ID, REDIRECT_URI
+from models.Sheet import Sheet, NoSheetLink
 
 
 _command_registry: list[Callable[[str, str], str]] = []
@@ -96,12 +97,10 @@ def schedule_show(count: str) -> str:
     working_count = 3
     if count.isdigit():
         working_count = int(count)
-    sheet_url = get_sheet_link()
-    if not sheet_url:
-        return "No sheet link saved. Please run `/schedule link <google sheets link>`"
-    creds_path = "credentials.json"
-    from utils import format_upcoming_events
-    return format_upcoming_events(sheet_url, creds_path, working_count)
+    try:
+        return Sheet().formatted_upcoming_events(working_count)
+    except NoSheetLink as e:
+        return repr(e)
 
 
 def schedule_set(schedule: str) -> str:

@@ -112,3 +112,21 @@ def get_sheet_link() -> str | None:
     row = c.fetchone()
     conn.close()
     return row[0] if row else None
+
+
+def save_group_id(group_id: str):
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute(
+        "INSERT OR REPLACE INTO settings (key, value) VALUES ('group_id', ?)", (group_id,))
+    conn.commit()
+    conn.close()
+
+
+def get_group_id() -> str | None:
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute("SELECT value FROM settings WHERE key = 'group_id'")
+    row = c.fetchone()
+    conn.close()
+    return row[0] if row else None
