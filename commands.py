@@ -1,20 +1,41 @@
+from difflib import get_close_matches
 from typing import Callable
 
 from requests import delete
 
-from storage import get_all_messages, clear_messages, get_token, save_schedule, save_sheet_link
-
 from bot_secrets import CLIENT_ID, REDIRECT_URI
 from models.Sheet import Sheet, NoSheetLink
+from storage import get_all_messages, clear_messages, get_token, save_schedule, save_sheet_link
 
 
 _command_registry: list[Callable[[str, str], str]] = []
-
 
 def command(func: Callable[[str, str], str]):
     """Decorator to register bot commands for /help."""
     _command_registry.append(func)
     return func
+
+
+def process_message(sender: str, text: str) -> str | None:
+    """Process incoming message and return a response string if applicable."""
+    if not text.startswith("/"):
+        return
+
+    parts = text.strip().split(maxsplit=1)
+    command_name = parts[0][1:].lower()
+    args = parts[1] if len(parts) > 1 else ""
+
+    command_map = {func.__name__: func for func in _command_registry}
+    func = command_map.get(command_name)
+
+    if func:
+        return func(sender, args)
+
+    suggestions = get_close_matches(
+        command_name, command_map.keys(), n=1, cutoff=0.6)
+    if suggestions:
+        return f"Unknown command '/{command_name}'. Did you mean '/{suggestions[0]}'?"
+    return f"Unknown command '/{command_name}'. Type '/help' to see available commands."
 
 
 @command

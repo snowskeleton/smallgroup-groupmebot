@@ -1,9 +1,10 @@
 from flask import Flask, request
 from requests import post
 
+from commands import process_message
 from storage import save_group_id, save_message, save_token
 from bot_secrets import *
-from utils import to_or_from_the_bot, process_message, send_message
+from utils import to_or_from_the_bot, send_message
 
 app = Flask(__name__)
 

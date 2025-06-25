@@ -1,13 +1,10 @@
 from croniter import croniter
 from datetime import datetime, timedelta
-from difflib import get_close_matches
 from pytz import timezone
 from typing import Dict
 
 from requests import post
 from time import sleep
-
-import commands
 
 from commands import schedule_show
 from bot_secrets import BOT_NAME, BOT_ID
@@ -43,66 +40,43 @@ def send_message(text: str):
 
 
 def periodic_messages():
-    local_tz = timezone("America/New_York")
-
     while True:
-        cron_schedule = get_schedule()
-        if cron_schedule:
-            now = datetime.now(local_tz)
-
-            # Truncate seconds for a clean comparison
-            base = now.replace(second=0, microsecond=0)
-
-            if croniter.match(cron_schedule, base):
-                send_message(schedule_show("3"))
-
-        # --- Check for events to create for tomorrow ---
-        sheet = Sheet()
-        tomorrow = datetime.now().date() + timedelta(days=1)
-
-        for event in sheet.events:
-            if event.date().date() == tomorrow:
-                group_id = get_group_id()
-                if not group_id:
-                    return
-                create_groupme_event(
-                    group_id,
-                    f"{event.date_str} - {event.leader}'s Event",
-                    event.date(),
-                    event.date() + timedelta(hours=1),
-                    str(event),
-                    event.location_display
-                )
-        # ------------------------------------------------
+        _send_scheduled_schedule()
+        _send_next_calendar_event()
         sleep(60)
 
 
-def process_message(sender: str, text: str) -> str | None:
-    """Process incoming message and return a response string if applicable."""
+def _send_scheduled_schedule():
+    local_tz = timezone("America/New_York")
+    cron_schedule = get_schedule()
+    if cron_schedule:
+        now = datetime.now(local_tz)
 
-    if not text.startswith("/"):
-        return
+        # Truncate seconds for a clean comparison
+        base = now.replace(second=0, microsecond=0)
 
-    parts = text.strip().split(maxsplit=1)
-    command = parts[0][1:].lower()  # Strip leading "/"
-    args = parts[1] if len(parts) > 1 else ""
-
-    if hasattr(commands, command):
-        func = getattr(commands, command)
-        if callable(func):
-            return func(sender, args)  # type: ignore
-
-    # Suggest similar commands
-    available = [name for name in dir(commands) if callable(getattr(commands, name)) and not name.startswith("__")]
-    suggestions = get_close_matches(command, available, n=1, cutoff=0.6)
-
-    if suggestions:
-        return f"Unknown command '/{command}'. Did you mean '/{suggestions[0]}'?"
-    else:
-        return f"Unknown command '/{command}'. Type '/help' to see available commands."
+        if croniter.match(cron_schedule, base):
+            send_message(schedule_show("3"))
 
 
-# --- GroupMe Event Creation ---
+def _send_next_calendar_event():
+    sheet = Sheet()
+    tomorrow = datetime.now().date() + timedelta(days=1)
+    for event in sheet.events:
+        if event.date().date() == tomorrow:
+            group_id = get_group_id()
+            if not group_id:
+                return
+            create_groupme_event(
+                group_id,
+                f"{event.date_str} - {event.leader}'s Event",
+                event.date(),
+                event.date() + timedelta(hours=1),
+                str(event),
+                event.location_display
+            )
+
+
 def create_groupme_event(group_id: str, name: str, start_at: datetime, end_at: datetime, description: str, location_name: str, location_address: str = ""):
     token = get_token()
     if not token:
