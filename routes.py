@@ -1,8 +1,7 @@
 from flask import Flask, request
-import requests
+from requests import post
 
-import storage
-
+from storage import save_group_id, save_message, save_token
 from bot_secrets import *
 from utils import to_or_from_the_bot, process_message, send_message
 
@@ -24,9 +23,9 @@ def new_event():
     group_id = data.get("group_id", "")
     sender_id = data.get("sender_id", "")
 
-    storage.save_group_id(group_id)
+    save_group_id(group_id)
     if to_or_from_the_bot(sender, text):
-        storage.add_message(message_id, created_at, group_id, sender_id)
+        save_message(message_id, created_at, group_id, sender_id)
 
     # Only process messages from others that are commands
     if sender != BOT_NAME and text:
@@ -46,7 +45,7 @@ def callback():
 def oauth_callback():
     token = request.args.get("access_token")
     if token:
-        storage.save_token(token)
+        save_token(token)
         return "Authentication complete. Token saved."
 
     # Fallback: standard code exchange
@@ -63,12 +62,12 @@ def oauth_callback():
         "redirect_uri": REDIRECT_URI
     }
 
-    resp = requests.post(token_url, data=payload)
+    resp = post(token_url, data=payload)
 
     if resp.ok:
         access_token = resp.json().get("access_token")
         if access_token:
-            storage.save_token(access_token)
+            save_token(access_token)
             return "Authentication complete. Token saved."
         else:
             return "Failed to retrieve access token.", 500

@@ -1,6 +1,6 @@
-import requests
-
 from typing import Callable
+
+from requests import delete
 
 from storage import get_all_messages, clear_messages, get_token, save_schedule, save_sheet_link
 
@@ -56,7 +56,7 @@ def clear(sender: str, args: str) -> str:
     success_count = 0
     for msg_id, _, group_id, _ in messages:
         url = f"https://api.groupme.com/v3/conversations/{group_id}/messages/{msg_id}?token={token}"
-        resp = requests.delete(url)
+        resp = delete(url)
         if resp.ok:
             success_count += 1
         else:

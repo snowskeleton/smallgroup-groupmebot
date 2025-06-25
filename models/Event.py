@@ -1,6 +1,6 @@
 from datetime import datetime
-
 from typing import List, Dict
+
 
 class Event:
     def __init__(

@@ -1,9 +1,8 @@
-from typing import List, Dict, Tuple
 from datetime import datetime
+from typing import List, Dict, Tuple
 
-import gspread
 from google.oauth2.service_account import Credentials
-from gspread import Spreadsheet
+from gspread import Spreadsheet, authorize
 
 from .Event import Event
 from storage import get_sheet_link
@@ -33,7 +32,7 @@ class Sheet:
 
         creds = Credentials.from_service_account_file(  # type: ignore
             CREDS_PATH, scopes=GOOGLE_SHEET_READ_ONLY_SCOPES)  # type: ignore
-        gc = gspread.authorize(creds)
+        gc = authorize(creds)
         all_data = gc.open_by_url(sheet_url)
 
         schedule_data, people_data = _data_from_sheets(all_data)

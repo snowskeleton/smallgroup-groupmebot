@@ -1,10 +1,10 @@
-import sqlite3
+from sqlite3 import connect
 
 DB_PATH = "messages.db"
 
 
 def init_db():
-    conn = sqlite3.connect(DB_PATH)
+    conn = connect(DB_PATH)
     print("[DEBUG] Running init_db()")
     c = conn.cursor()
     c.execute("""
@@ -31,8 +31,8 @@ def init_db():
     conn.close()
 
 
-def add_message(message_id: str, created_at: int, group_id: str, sender_id: str):
-    conn = sqlite3.connect(DB_PATH)
+def save_message(message_id: str, created_at: int, group_id: str, sender_id: str):
+    conn = connect(DB_PATH)
     c = conn.cursor()
     c.execute("""
         INSERT OR REPLACE INTO messages (id, created_at, group_id, sender_id)
@@ -43,7 +43,7 @@ def add_message(message_id: str, created_at: int, group_id: str, sender_id: str)
 
 
 def get_all_messages() -> list[tuple[str, int, str, str]]:
-    conn = sqlite3.connect(DB_PATH)
+    conn = connect(DB_PATH)
     c = conn.cursor()
     c.execute("SELECT id, created_at, group_id, sender_id FROM messages")
     rows = c.fetchall()
@@ -52,7 +52,7 @@ def get_all_messages() -> list[tuple[str, int, str, str]]:
 
 
 def clear_messages():
-    conn = sqlite3.connect(DB_PATH)
+    conn = connect(DB_PATH)
     c = conn.cursor()
     c.execute("DELETE FROM messages")
     conn.commit()
@@ -61,7 +61,7 @@ def clear_messages():
 
 def save_token(token: str):
     print(token)
-    conn = sqlite3.connect(DB_PATH)
+    conn = connect(DB_PATH)
     c = conn.cursor()
     c.execute(
         "INSERT OR REPLACE INTO credentials (id, token) VALUES (1, ?)", (token,))
@@ -70,7 +70,7 @@ def save_token(token: str):
 
 
 def get_token() -> str | None:
-    conn = sqlite3.connect(DB_PATH)
+    conn = connect(DB_PATH)
     c = conn.cursor()
     c.execute("SELECT token FROM credentials WHERE id = 1")
     row = c.fetchone()
@@ -79,7 +79,7 @@ def get_token() -> str | None:
 
 
 def save_schedule(schedule: str):
-    conn = sqlite3.connect(DB_PATH)
+    conn = connect(DB_PATH)
     c = conn.cursor()
     c.execute(
         "INSERT OR REPLACE INTO settings (key, value) VALUES ('schedule', ?)", (schedule,))
@@ -88,7 +88,7 @@ def save_schedule(schedule: str):
 
 
 def get_schedule() -> str | None:
-    conn = sqlite3.connect(DB_PATH)
+    conn = connect(DB_PATH)
     c = conn.cursor()
     c.execute("SELECT value FROM settings WHERE key = 'schedule'")
     row = c.fetchone()
@@ -97,7 +97,7 @@ def get_schedule() -> str | None:
 
 
 def save_sheet_link(link: str):
-    conn = sqlite3.connect(DB_PATH)
+    conn = connect(DB_PATH)
     c = conn.cursor()
     c.execute(
         "INSERT OR REPLACE INTO settings (key, value) VALUES ('link', ?)", (link,))
@@ -106,7 +106,7 @@ def save_sheet_link(link: str):
 
 
 def get_sheet_link() -> str | None:
-    conn = sqlite3.connect(DB_PATH)
+    conn = connect(DB_PATH)
     c = conn.cursor()
     c.execute("SELECT value FROM settings WHERE key = 'link'")
     row = c.fetchone()
@@ -115,7 +115,7 @@ def get_sheet_link() -> str | None:
 
 
 def save_group_id(group_id: str):
-    conn = sqlite3.connect(DB_PATH)
+    conn = connect(DB_PATH)
     c = conn.cursor()
     c.execute(
         "INSERT OR REPLACE INTO settings (key, value) VALUES ('group_id', ?)", (group_id,))
@@ -124,7 +124,7 @@ def save_group_id(group_id: str):
 
 
 def get_group_id() -> str | None:
-    conn = sqlite3.connect(DB_PATH)
+    conn = connect(DB_PATH)
     c = conn.cursor()
     c.execute("SELECT value FROM settings WHERE key = 'group_id'")
     row = c.fetchone()

@@ -1,19 +1,19 @@
 from croniter import croniter
 from datetime import datetime, timedelta
-from typing import Dict
+from difflib import get_close_matches
 from pytz import timezone
+from typing import Dict
 
-import requests
-import time
+from requests import post
+from time import sleep
 
 import commands
-import difflib
 
+from commands import schedule_show
 from bot_secrets import BOT_NAME, BOT_ID
 from storage import get_schedule, get_token, get_group_id
 
 from models.Sheet import Sheet
-
 
 
 def check_secrets():
@@ -39,7 +39,7 @@ def to_or_from_the_bot(sender: str, text: str) -> bool:
 def send_message(text: str):
     url = "https://api.groupme.com/v3/bots/post"
     data = {"bot_id": BOT_ID, "text": text}
-    requests.post(url, json=data)
+    post(url, json=data)
 
 
 def periodic_messages():
@@ -54,7 +54,7 @@ def periodic_messages():
             base = now.replace(second=0, microsecond=0)
 
             if croniter.match(cron_schedule, base):
-                send_message(commands.schedule_show("3"))
+                send_message(schedule_show("3"))
 
         # --- Check for events to create for tomorrow ---
         sheet = Sheet()
@@ -74,7 +74,7 @@ def periodic_messages():
                     event.location_display
                 )
         # ------------------------------------------------
-        time.sleep(60)
+        sleep(60)
 
 
 def process_message(sender: str, text: str) -> str | None:
@@ -94,7 +94,7 @@ def process_message(sender: str, text: str) -> str | None:
 
     # Suggest similar commands
     available = [name for name in dir(commands) if callable(getattr(commands, name)) and not name.startswith("__")]
-    suggestions = difflib.get_close_matches(command, available, n=1, cutoff=0.6)
+    suggestions = get_close_matches(command, available, n=1, cutoff=0.6)
 
     if suggestions:
         return f"Unknown command '/{command}'. Did you mean '/{suggestions[0]}'?"
@@ -125,7 +125,7 @@ def create_groupme_event(group_id: str, name: str, start_at: datetime, end_at: d
     if location_address:
         payload["location"]["address"] = location_address
 
-    resp = requests.post(url, headers=headers, json=payload)
+    resp = post(url, headers=headers, json=payload)
     if resp.ok:
         print(f"Event '{name}' created successfully.")
     else:
