@@ -71,13 +71,16 @@ def save_token(token: str):
     conn.close()
 
 
-def get_token() -> str | None:
+def get_token() -> str:
     conn = connect(DB_PATH)
     c = conn.cursor()
     c.execute("SELECT token FROM credentials WHERE id = 1")
     row = c.fetchone()
     conn.close()
-    return row[0] if row else None
+    if not row:
+        raise NoAuthenticationToken(
+            "Please authenticate with '/authenticate' first")
+    return row[0]
 
 
 def save_schedule(schedule: str):
@@ -89,15 +92,12 @@ def save_schedule(schedule: str):
     conn.close()
 
 
-def get_schedule() -> str:
+def get_schedule() -> str | None:
     conn = connect(DB_PATH)
     c = conn.cursor()
     c.execute("SELECT value FROM settings WHERE key = 'schedule'")
     row = c.fetchone()
     conn.close()
-    if not row:
-        raise NoAuthenticationToken(
-            "Please authenticate with '/authenticate' first")
     return row[0]
 
 
