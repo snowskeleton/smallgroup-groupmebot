@@ -62,8 +62,6 @@ def periodic_messages():
 def send_scheduled_schedule():
     local_tz = timezone("America/New_York")
     cron_schedule = get_schedule()
-    if not cron_schedule:
-        return
     if cron_schedule:
         now = datetime.now(local_tz)
 
