@@ -1,0 +1,11 @@
+services:
+  groupmebot:
+    build: .
+    container_name: groupmebot
+    ports:
+      - "5001:5001"
+    restart: always
+    environment:
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - .:/app
