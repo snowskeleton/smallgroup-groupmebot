@@ -8,9 +8,10 @@ from time import sleep
 
 from commands import schedule_show
 from bot_secrets import BOT_NAME, BOT_ID
-from storage import get_schedule, get_token, get_group_id
-
+from exceptions import NoAuthenticationToken
+from models.Event import Event
 from models.Sheet import Sheet
+from storage import get_schedule, get_token, get_group_id
 
 
 def check_secrets():
@@ -41,12 +42,12 @@ def send_message(text: str):
 
 def periodic_messages():
     while True:
-        _send_scheduled_schedule()
-        _send_next_calendar_event()
+        send_scheduled_schedule()
+        # send_next_calendar_event()
         sleep(60)
 
 
-def _send_scheduled_schedule():
+def send_scheduled_schedule():
     local_tz = timezone("America/New_York")
     cron_schedule = get_schedule()
     if cron_schedule:
@@ -59,48 +60,46 @@ def _send_scheduled_schedule():
             send_message(schedule_show("3"))
 
 
-def _send_next_calendar_event():
+def send_next_calendar_event(count: int = 1):
     sheet = Sheet()
-    tomorrow = datetime.now().date() + timedelta(days=1)
-    for event in sheet.events:
-        if event.date().date() == tomorrow:
-            group_id = get_group_id()
-            if not group_id:
-                return
-            create_groupme_event(
-                group_id,
-                f"{event.date_str} - {event.leader}'s Event",
-                event.date(),
-                event.date() + timedelta(hours=1),
-                str(event),
-                event.location_display
-            )
+    for event in sheet.upcoming_events(count):
+        create_groupme_event(event)
 
 
-def create_groupme_event(group_id: str, name: str, start_at: datetime, end_at: datetime, description: str, location_name: str, location_address: str = ""):
-    token = get_token()
-    if not token:
-        print("Admin token not set. Please authenticate.")
-        return
+def create_groupme_event(event: Event):
+    token = ""
+    try:
+        token = get_token()
+    except NoAuthenticationToken as e:
+        send_message(repr(e))
+
+    group_id = get_group_id()
 
     url = f"https://api.groupme.com/v3/conversations/{group_id}/events/create"
     headers = {"X-Access-Token": token}
 
+    eastern = timezone("America/New_York")
+    # Combine date and time
+    start_at = event.date()
+    if event.event_time:
+        time_obj = datetime.strptime(event.event_time, "%I:%M %p").time()
+        start_at = start_at.replace(hour=time_obj.hour, minute=time_obj.minute)
+
+    start_at = start_at.astimezone(eastern)
+    end_at = (start_at + timedelta(hours=2))
+
     payload: Dict[str, str | int | bool | Dict[str, str]] = {
-        "name": name,
+        "name": f"{event.date_str} – Small Group ft. {event.leader}",
         "start_at": start_at.isoformat(),
         "end_at": end_at.isoformat(),
         "timezone": "America/New_York",
-        "description": description,
-        "is_all_day": True,
-        "location": {"name": location_name}
+        "description": event.notes,
+        "is_all_day": False,
+        "location": {"name": event.location_display}
     }
-
-    if location_address:
-        payload["location"]["address"] = location_address
 
     resp = post(url, headers=headers, json=payload)
     if resp.ok:
-        print(f"Event '{name}' created successfully.")
+        print(f"Event '{payload['name']}' created successfully.")
     else:
         print(f"Failed to create event: {resp.status_code} {resp.text}")

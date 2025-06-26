@@ -1,7 +1,9 @@
 from sqlite3 import connect
 
-DB_PATH = "messages.db"
+from exceptions import NoGroupID, NoSheetLink, NoAuthenticationToken
 
+
+DB_PATH = "messages.db"
 
 def init_db():
     conn = connect(DB_PATH)
@@ -87,13 +89,16 @@ def save_schedule(schedule: str):
     conn.close()
 
 
-def get_schedule() -> str | None:
+def get_schedule() -> str:
     conn = connect(DB_PATH)
     c = conn.cursor()
     c.execute("SELECT value FROM settings WHERE key = 'schedule'")
     row = c.fetchone()
     conn.close()
-    return row[0] if row else None
+    if not row:
+        raise NoAuthenticationToken(
+            "Please authenticate with '/authenticate' first")
+    return row[0]
 
 
 def save_sheet_link(link: str):
@@ -105,13 +110,16 @@ def save_sheet_link(link: str):
     conn.close()
 
 
-def get_sheet_link() -> str | None:
+def get_sheet_link() -> str:
     conn = connect(DB_PATH)
     c = conn.cursor()
     c.execute("SELECT value FROM settings WHERE key = 'link'")
     row = c.fetchone()
     conn.close()
-    return row[0] if row else None
+    if not row:
+        raise NoSheetLink(
+            "Please add a sheet link with /schedule link <google sheet link>")
+    return row[0]
 
 
 def save_group_id(group_id: str):
@@ -123,10 +131,12 @@ def save_group_id(group_id: str):
     conn.close()
 
 
-def get_group_id() -> str | None:
+def get_group_id() -> str:
     conn = connect(DB_PATH)
     c = conn.cursor()
     c.execute("SELECT value FROM settings WHERE key = 'group_id'")
     row = c.fetchone()
     conn.close()
-    return row[0] if row else None
+    if not row:
+        raise NoGroupID("I don't know what group I'm in :(")
+    return row[0]

@@ -5,6 +5,7 @@ from google.oauth2.service_account import Credentials
 from gspread import Spreadsheet, authorize
 
 from .Event import Event
+from exceptions import NoSheetLink
 from storage import get_sheet_link
 
 
@@ -27,8 +28,6 @@ class Sheet:
     def update_from_link(self):
         """Fetch the latest events and people data from the Google Sheet."""
         sheet_url = get_sheet_link()
-        if not sheet_url:
-            raise NoSheetLink("Please add a sheet link with /schedule link <google sheet link>")
 
         creds = Credentials.from_service_account_file(  # type: ignore
             CREDS_PATH, scopes=GOOGLE_SHEET_READ_ONLY_SCOPES)  # type: ignore
@@ -76,7 +75,3 @@ def _data_from_sheets(data: Spreadsheet) -> Tuple[List[Dict[str, int | float | s
             people_data = sheet_rows
 
     return schedule_data, people_data
-
-
-class SheetException(Exception): pass
-class NoSheetLink(SheetException): pass

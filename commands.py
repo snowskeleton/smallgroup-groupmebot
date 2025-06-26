@@ -29,7 +29,10 @@ def process_message(sender: str, text: str) -> str | None:
     func = command_map.get(command_name)
 
     if func:
-        return func(sender, args)
+        try:
+            return func(sender, args)
+        except Exception as e:
+            return repr(e)
 
     suggestions = get_close_matches(
         command_name, command_map.keys(), n=1, cutoff=0.6)
@@ -64,6 +67,23 @@ def clear(sender: str, args: str) -> str:
 
     clear_messages()
     return f"Cleared {success_count} recent bot messages."
+
+
+@command
+def calendar(sender: str, args: str) -> str:
+    """Generate calendar event for next <count> events"""
+    from utils import send_next_calendar_event
+    parts = args.strip().split(maxsplit=1)
+    subcommand = parts[0].lower() if parts else "create"
+    count = 1
+    if len(parts) > 1 and parts[1].isdigit():
+        count = int(parts[1])
+
+    if subcommand == "create":
+        send_next_calendar_event(count)
+        return f"Calendar event created for {count} upcoming event(s)."
+
+    return "Unknown subcommand. Usage:\n\t/calendar create [count]"
 
 
 @command
