@@ -43,6 +43,7 @@ def send_message(text: str):
 def periodic_messages():
     while True:
         send_scheduled_schedule()
+        # this needs logic to only create it a day ahead of time and not create duplicate events
         # send_next_calendar_event()
         sleep(60)
 
