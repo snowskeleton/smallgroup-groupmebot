@@ -23,3 +23,14 @@ Setup like so:
   * Create a Service Account and generate a JSON key file
   * Download the JSON key file and save it as `credentials.json` in the project root directory
 * `docker compose up -d`
+
+### Post-build configuration
+* Ensure your API endpoing is set correctly lol
+To make sure it has basic connectivity, from GroupMe run
+* `/ping`
+To see a full list of commands, run
+* `/help`
+To authorize it to send some commands, run
+* `/authenticate`
+* * Have an admin or owner follow the link provided
+* `/schedule link <Google Sheets sheet link>`
