@@ -98,7 +98,7 @@ def get_schedule() -> str | None:
     c.execute("SELECT value FROM settings WHERE key = 'schedule'")
     row = c.fetchone()
     conn.close()
-    return row[0]
+    return row[0] if row else None
 
 
 def save_sheet_link(link: str):
