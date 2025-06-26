@@ -7,7 +7,12 @@ from requests import post
 from time import sleep
 
 from commands import schedule_show
-from bot_secrets import BOT_NAME, BOT_ID
+try:
+    from bot_secrets import BOT_NAME, BOT_ID
+except ImportError:
+    print("\n\t[ERROR] Missing 'bot_secrets.py'.\n")
+    import sys
+    sys.exit(1)
 from exceptions import NoAuthenticationToken
 from models.Event import Event
 from models.Sheet import Sheet
@@ -16,7 +21,13 @@ from storage import get_schedule, get_token, get_group_id
 
 def check_secrets():
     """Ensure all uppercase variables in bot_secrets are non-empty."""
-    import bot_secrets
+    try:
+        import bot_secrets
+    except ImportError:
+        print("\n\t[ERROR] Missing 'bot_secrets.py'.\n")
+        import sys
+        sys.exit(1)
+
     for key in dir(bot_secrets):
         if key.isupper():
             value = getattr(bot_secrets, key)

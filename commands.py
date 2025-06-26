@@ -3,7 +3,13 @@ from typing import Callable
 
 from requests import delete
 
-from bot_secrets import CLIENT_ID, REDIRECT_URI
+try:
+    from bot_secrets import CLIENT_ID, REDIRECT_URI
+except ImportError:
+    print("\n\t[ERROR] Missing 'bot_secrets.py'.\n")
+    import sys
+    sys.exit(1)
+
 from models.Sheet import Sheet, NoSheetLink
 from storage import get_all_messages, clear_messages, get_token, save_schedule, save_sheet_link
 

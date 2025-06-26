@@ -3,7 +3,12 @@ from requests import post
 
 from commands import process_message
 from storage import save_group_id, save_message, save_token
-from bot_secrets import *
+try:
+    from bot_secrets import *
+except ImportError:
+    print("\n\t[ERROR] Missing 'bot_secrets.py'.\n")
+    import sys
+    sys.exit(1)
 from utils import to_or_from_the_bot, send_message
 
 app = Flask(__name__)
