@@ -9,3 +9,4 @@ services:
       - PYTHONUNBUFFERED=1
     volumes:
       - .:/app
+      - /etc/localtime:/etc/localtime:ro
