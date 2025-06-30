@@ -18,6 +18,7 @@ class Sheet:
     def __init__(self):
         self.events: List[Event] = []
         self.people_data: List[Dict[str, int | float | str]] = []
+        self.names_data: List[Dict[str, int | float | str]] = []
 
     @classmethod
     def get_instance(cls) -> "Sheet":
@@ -34,9 +35,10 @@ class Sheet:
         gc = authorize(creds)
         all_data = gc.open_by_url(sheet_url)
 
-        schedule_data, people_data = _data_from_sheets(all_data)
+        schedule_data, people_data, names_data = _data_from_sheets(all_data)
 
         self.people_data = people_data
+        self.names_data = names_data
 
         self.events = []
         for row in schedule_data:
@@ -60,10 +62,18 @@ class Sheet:
         message = "Upcoming Events:\n\n" + "\n\n".join(upcoming_events_strings)
         return message
 
+    def get_all_emails(self) -> List[str]:
+        return [row["Emails"] for row in self.names_data if row.get("Emails")]
+
     
-def _data_from_sheets(data: Spreadsheet) -> Tuple[List[Dict[str, int | float | str]], List[Dict[str, int | float | str]]]:
+def _data_from_sheets(data: Spreadsheet) -> Tuple[
+    List[Dict[str, int | float | str]],
+    List[Dict[str, int | float | str]],
+    List[Dict[str, int | float | str]]
+]:
     schedule_data = []
     people_data = []
+    names_data = []
 
     for worksheet in data.worksheets():
         sheet_name = worksheet.title
@@ -73,5 +83,7 @@ def _data_from_sheets(data: Spreadsheet) -> Tuple[List[Dict[str, int | float | s
             schedule_data = sheet_rows
         elif sheet_name == "Names + Addresses":
             people_data = sheet_rows
+        elif sheet_name == "Names":
+            names_data = sheet_rows
 
-    return schedule_data, people_data
+    return schedule_data, people_data, names_data

@@ -10,6 +10,7 @@ except ImportError:
     import sys
     sys.exit(1)
 
+from emailer import send_email
 from models.Sheet import Sheet, NoSheetLink
 from storage import get_all_messages, clear_messages, get_token, save_schedule, save_sheet_link
 
@@ -145,7 +146,10 @@ def schedule_show(count: str) -> str:
     if count.isdigit():
         working_count = int(count)
     try:
-        return Sheet().formatted_upcoming_events(working_count)
+        formatted_events = Sheet().formatted_upcoming_events(working_count)
+        emails = Sheet().get_all_emails()
+        send_email(emails, "Upcoming events", formatted_events)
+        return formatted_events
     except NoSheetLink as e:
         return repr(e)
 

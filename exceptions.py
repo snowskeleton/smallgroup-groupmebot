@@ -4,3 +4,5 @@ class NoSheetLink(SheetException): pass
 class NoGroupID(Exception): pass
 
 class NoAuthenticationToken(Exception): pass
+
+class MailError(Exception): pass
