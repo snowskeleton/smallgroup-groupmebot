@@ -11,7 +11,8 @@ except ImportError:
     sys.exit(1)
 
 from emailer import send_email
-from models.Sheet import Sheet, NoSheetLink
+from exceptions import NoSheetLink
+from models.Sheet import Sheet
 from storage import get_all_messages, clear_messages, get_token, save_schedule, save_sheet_link
 
 
