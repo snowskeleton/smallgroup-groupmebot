@@ -10,7 +10,7 @@ from exceptions import MailError
 
 def send_email(address_list: List[str], subject: str, body: str):
     try:
-        address_list = ["test1@snowskeleton.net", "test2@snowskeleton.net"]
+        # address_list = ["test1@snowskeleton.net", "test2@snowskeleton.net"]
         msg = MIMEMultipart()
         msg["From"] = FROM_ADDRESS
         msg["To"] = ", ".join(address_list)

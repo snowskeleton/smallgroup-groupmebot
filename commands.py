@@ -124,7 +124,7 @@ def ping(sender: str, args: str) -> str:
 
 @command
 def schedule(sender: str, args: str) -> str:
-    """Manage or view the posting schedule. Subcommands: show [count], set <cron>, link <sheet url>."""
+    """Manage or view the posting schedule. Subcommands: show [count], email [count], set <cron>, link <sheet url>."""
     parts = args.strip().split(maxsplit=1)
     subcommand = parts[0].lower() if parts else "show"
     remainder = parts[1] if len(parts) > 1 else ""
@@ -133,13 +133,16 @@ def schedule(sender: str, args: str) -> str:
     if subcommand == "show":
         return schedule_show(remainder)
 
+    if subcommand == "email":
+        return schedule_email(remainder)
+
     if subcommand == "set":
         return schedule_set(remainder)
 
     if subcommand == "link":
         return schedule_link(remainder)
 
-    return "Unknown subcommand.\nUsage:\n\t/schedule show [count]\n\t/schedule set <cron expression>\n\t/schedule link <google sheets link>"
+    return "Unknown subcommand.\nUsage:\n\t/schedule show [count]\n\t/schedule email [count]\n\t/schedule set <cron expression>\n\t/schedule link <google sheets link>"
 
 
 def schedule_show(count: str) -> str:
@@ -149,12 +152,26 @@ def schedule_show(count: str) -> str:
     try:
         formatted_events = Sheet.get_instance().formatted_upcoming_events(
             working_count)
-        emails = Sheet.get_instance().get_all_emails()
-        send_email(emails, "Upcoming events", formatted_events)
+        schedule_email(str(working_count))
         return formatted_events
     except NoSheetLink as e:
         return repr(e)
 
+
+def schedule_email(count: str) -> str:
+    """Send an email with the next <count> events."""
+    working_count = 3
+    if count.isdigit():
+        working_count = int(count)
+    try:
+        formatted_events = Sheet.get_instance().formatted_upcoming_events(
+            working_count)
+        emails = Sheet.get_instance().get_all_emails()
+        html_body = formatted_events.replace("\n", "<br>")
+        send_email(emails, "Upcoming events", html_body)
+        return "Email sent!"
+    except NoSheetLink as e:
+        return repr(e)
 
 def schedule_set(schedule: str) -> str:
     if not schedule:
