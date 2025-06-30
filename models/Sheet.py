@@ -5,7 +5,6 @@ from google.oauth2.service_account import Credentials
 from gspread import Spreadsheet, authorize
 
 from .Event import Event
-from exceptions import NoSheetLink
 from storage import get_sheet_link
 
 
@@ -63,6 +62,7 @@ class Sheet:
         return message
 
     def get_all_emails(self) -> List[str]:
+        self.update_from_link()
         return [row["Emails"] for row in self.names_data if row.get("Emails")]
 
     
@@ -83,7 +83,7 @@ def _data_from_sheets(data: Spreadsheet) -> Tuple[
             schedule_data = sheet_rows
         elif sheet_name == "Names + Addresses":
             people_data = sheet_rows
-        elif sheet_name == "Names":
+        elif sheet_name == "All names":
             names_data = sheet_rows
 
     return schedule_data, people_data, names_data

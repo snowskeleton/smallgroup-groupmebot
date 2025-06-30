@@ -146,8 +146,9 @@ def schedule_show(count: str) -> str:
     if count.isdigit():
         working_count = int(count)
     try:
-        formatted_events = Sheet().formatted_upcoming_events(working_count)
-        emails = Sheet().get_all_emails()
+        formatted_events = Sheet.get_instance.formatted_upcoming_events(
+            working_count)
+        emails = Sheet.get_instance.get_all_emails()
         send_email(emails, "Upcoming events", formatted_events)
         return formatted_events
     except NoSheetLink as e:
