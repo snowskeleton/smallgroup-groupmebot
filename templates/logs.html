@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Logs{% endblock %}
+{% block content %}
+<h2>Logs</h2>
+
+<nav>
+    <ul>
+        <li><a href="{{ url_for('dashboard.logs_page') }}" {% if not current_level %}aria-current="page"{% endif %}>All</a></li>
+        <li><a href="{{ url_for('dashboard.logs_page', level='ERROR') }}" {% if current_level == 'ERROR' %}aria-current="page"{% endif %}>Error</a></li>
+        <li><a href="{{ url_for('dashboard.logs_page', level='WARNING') }}" {% if current_level == 'WARNING' %}aria-current="page"{% endif %}>Warning</a></li>
+        <li><a href="{{ url_for('dashboard.logs_page', level='INFO') }}" {% if current_level == 'INFO' %}aria-current="page"{% endif %}>Info</a></li>
+    </ul>
+</nav>
+
+{% if logs %}
+<figure>
+<table>
+    <thead>
+        <tr>
+            <th>Time</th>
+            <th>Level</th>
+            <th>Source</th>
+            <th>Message</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for entry in logs %}
+        <tr>
+            <td>{{ entry[1] | timestamp }}</td>
+            <td>{{ entry[2] }}</td>
+            <td>{{ entry[3] }}</td>
+            <td>{{ entry[4] }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+</figure>
+{% else %}
+<p>No log entries found.</p>
+{% endif %}
+{% endblock %}

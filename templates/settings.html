@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Settings{% endblock %}
+{% block content %}
+<h2>Settings</h2>
+
+<article>
+    <h3>Google Sheet Link</h3>
+    <form method="post">
+        <input type="hidden" name="action" value="update_link">
+        <input type="url" name="sheet_link" value="{{ sheet_link }}" placeholder="https://docs.google.com/spreadsheets/d/...">
+        <button type="submit">Update Link</button>
+    </form>
+</article>
+
+<article>
+    <h3>Cron Schedule</h3>
+    <form method="post">
+        <input type="hidden" name="action" value="update_schedule">
+        <input type="text" name="schedule" value="{{ cron_schedule }}" placeholder="0 9 * * 1">
+        <small>Cron expression for automatic schedule posting (Eastern Time)</small>
+        <button type="submit">Update Schedule</button>
+    </form>
+</article>
+
+<article>
+    <h3>GroupMe OAuth</h3>
+    <p>Status: {% if has_token %}<strong>Authenticated</strong>{% else %}<strong>Not authenticated</strong> — use <code>/authenticate</code> in GroupMe chat{% endif %}</p>
+</article>
+
+<article>
+    <h3>Test Email</h3>
+    <form method="post">
+        <input type="hidden" name="action" value="test_email">
+        <p>Send a test email to <strong>{{ user[1] }}</strong></p>
+        <button type="submit">Send Test Email</button>
+    </form>
+</article>
+{% endblock %}

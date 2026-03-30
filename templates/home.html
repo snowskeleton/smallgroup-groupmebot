@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Home{% endblock %}
+{% block content %}
+<h2>Dashboard</h2>
+
+<div class="grid">
+    <article>
+        <h3>Settings</h3>
+        <table>
+            <tr>
+                <td><strong>Sheet Link</strong></td>
+                <td>{% if sheet_link %}<a href="{{ sheet_link }}">Configured</a>{% else %}Not set{% endif %}</td>
+            </tr>
+            <tr>
+                <td><strong>Cron Schedule</strong></td>
+                <td>{{ cron_schedule or "Not set" }}</td>
+            </tr>
+            <tr>
+                <td><strong>Group ID</strong></td>
+                <td>{{ group_id or "Not set" }}</td>
+            </tr>
+            <tr>
+                <td><strong>Auth Token</strong></td>
+                <td>{% if has_token %}Active{% else %}Not configured{% endif %}</td>
+            </tr>
+        </table>
+    </article>
+
+    <article>
+        <h3>Status</h3>
+        <p><strong>Recent Errors:</strong> {{ error_count }}</p>
+        {% if error_count > 0 %}
+        <a href="{{ url_for('dashboard.logs_page', level='ERROR') }}">View errors</a>
+        {% endif %}
+    </article>
+</div>
+
+{% if upcoming %}
+<article>
+    <h3>Upcoming Events</h3>
+    {% for event in upcoming %}
+    <pre>{{ event }}</pre>
+    {% endfor %}
+</article>
+{% else %}
+<article>
+    <h3>Upcoming Events</h3>
+    <p>No upcoming events found{% if not sheet_link %} (no sheet link configured){% endif %}.</p>
+</article>
+{% endif %}
+{% endblock %}

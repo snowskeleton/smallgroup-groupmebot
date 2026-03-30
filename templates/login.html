@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}{% if has_users %}Login{% else %}Create Account{% endif %}{% endblock %}
+{% block content %}
+<article>
+    <h2>{% if has_users %}Login{% else %}Create Account{% endif %}</h2>
+    <form method="post">
+        <label for="email">Email</label>
+        <input type="email" id="email" name="email" placeholder="you@example.com" required>
+        <button type="submit">Send login link</button>
+    </form>
+</article>
+{% endblock %}

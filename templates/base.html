@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Dashboard{% endblock %} - GroupMe Bot</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+</head>
+<body>
+    <nav class="container">
+        <ul>
+            <li><strong>GroupMe Bot</strong></li>
+        </ul>
+        {% if user %}
+        <ul>
+            <li><a href="{{ url_for('dashboard.home') }}">Home</a></li>
+            <li><a href="{{ url_for('dashboard.settings') }}">Settings</a></li>
+            <li><a href="{{ url_for('dashboard.logs_page') }}">Logs</a></li>
+            <li><a href="{{ url_for('dashboard.users') }}">Users</a></li>
+            <li><a href="{{ url_for('dashboard.logout') }}">Logout</a></li>
+        </ul>
+        {% endif %}
+    </nav>
+    <main class="container">
+        {% with messages = get_flashed_messages() %}
+        {% if messages %}
+        {% for message in messages %}
+        <article>{{ message }}</article>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
+        {% block content %}{% endblock %}
+    </main>
+</body>
+</html>

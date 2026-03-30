@@ -14,6 +14,7 @@ except ImportError:
     import sys
     sys.exit(1)
 from exceptions import NoAuthenticationToken
+from log import log
 from models.Event import Event
 from models.Sheet import Sheet
 from storage import get_schedule, get_token, get_group_id
@@ -112,6 +113,6 @@ def create_groupme_event(event: Event):
 
     resp = post(url, headers=headers, json=payload)
     if resp.ok:
-        print(f"Event '{payload['name']}' created successfully.")
+        log("INFO", "utils", f"Event '{payload['name']}' created successfully.")
     else:
-        print(f"Failed to create event: {resp.status_code} {resp.text}")
+        log("ERROR", "utils", f"Failed to create event: {resp.status_code} {resp.text}")

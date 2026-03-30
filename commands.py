@@ -11,6 +11,7 @@ except ImportError:
     sys.exit(1)
 
 from emailer import send_email
+from log import log
 from exceptions import NoSheetLink
 from models.Sheet import Sheet
 from storage import get_all_messages, clear_messages, get_token, save_schedule, save_sheet_link
@@ -71,7 +72,7 @@ def clear(sender: str, args: str) -> str:
         if resp.ok:
             success_count += 1
         else:
-            print(f"Failed to delete {msg_id}: {resp.status_code} {resp.text}")
+            log("ERROR", "commands", f"Failed to delete {msg_id}: {resp.status_code} {resp.text}")
 
     clear_messages()
     return f"Cleared {success_count} recent bot messages."

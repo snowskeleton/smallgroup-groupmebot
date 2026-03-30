@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Users{% endblock %}
+{% block content %}
+<h2>Users</h2>
+
+<article>
+    <h3>Current Users</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Email</th>
+                <th>Created</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for u in all_users %}
+            <tr>
+                <td>{{ u[1] }}{% if u[0] == current_user_id %} (you){% endif %}</td>
+                <td>{{ u[2] | timestamp }}</td>
+                <td>
+                    {% if u[0] != current_user_id %}
+                    <form method="post" style="margin:0">
+                        <input type="hidden" name="action" value="remove">
+                        <input type="hidden" name="user_id" value="{{ u[0] }}">
+                        <button type="submit" class="secondary outline" onclick="return confirm('Remove this user?')">Remove</button>
+                    </form>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</article>
+
+<article>
+    <h3>Invite User</h3>
+    <form method="post">
+        <input type="hidden" name="action" value="invite">
+        <label for="email">Email</label>
+        <input type="email" id="email" name="email" placeholder="newuser@example.com" required>
+        <button type="submit">Send Invite</button>
+    </form>
+</article>
+{% endblock %}
