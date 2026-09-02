@@ -15,4 +15,8 @@ COPY . .
 EXPOSE 5001
 
 # Run the bot
-CMD ["gunicorn", "--bind", "0.0.0.0:5001", "main:app"]
+# One worker, many threads. The scheduled-post loop is a thread inside the
+# app, so a second *worker* would be a second scheduler posting duplicates.
+# Threads give concurrency for the blocking Sheets and GroupMe calls without
+# that, which is the right trade for an I/O-bound app.
+CMD ["gunicorn", "--bind", "0.0.0.0:5001", "-w", "1", "--threads", "8", "main:app"]

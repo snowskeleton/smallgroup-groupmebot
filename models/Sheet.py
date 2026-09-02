@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+from threading import Lock
 from time import time
 from typing import Dict, List
 
@@ -10,6 +11,7 @@ from .Event import Event
 from .Person import Roster
 from .Rotation import (Rotation, assign_rows, blank_rows, last_scheduled_date,
                        meeting_dates, parse_weekday)
+from config import CREDENTIALS_PATH
 from log import log
 from storage import get_sheet_link
 
@@ -45,6 +47,9 @@ class Sheet:
         # from, keyed by tab name.
         self.pools: Dict[str, List[str]] = {}
         self._fetched_at = 0.0
+        # Gunicorn serves requests on threads, so two commands can land at
+        # once. Appending the same week twice is the failure that matters.
+        self._write_lock = Lock()
 
     @classmethod
     def get_instance(cls) -> "Sheet":
@@ -56,7 +61,7 @@ class Sheet:
 
     def _open(self) -> Spreadsheet:
         creds = Credentials.from_service_account_file(  # type: ignore
-            CREDS_PATH, scopes=GOOGLE_SHEET_SCOPES)  # type: ignore
+            CREDENTIALS_PATH, scopes=GOOGLE_SHEET_SCOPES)  # type: ignore
         return authorize(creds).open_by_url(get_sheet_link())
 
     def update_from_link(self, force: bool = False):
@@ -153,6 +158,10 @@ class Sheet:
         Appends rows below the last one, and fills blank rotation cells. It
         never changes a cell that already has something in it.
         """
+        with self._write_lock:
+            return self._generate_schedule()
+
+    def _generate_schedule(self) -> str:
         spreadsheet = self._open()
         self._load(spreadsheet)
         self._fetched_at = time()

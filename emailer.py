@@ -4,11 +4,16 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from typing import List
 
-from bot_secrets import SMTP_SERVER, SMTP_PORT, SMTP_USERNAME, SMTP_PASSWORD, FROM_ADDRESS, DASHBOARD_URL
+from config import (SMTP_SERVER, SMTP_PORT, SMTP_USERNAME, SMTP_PASSWORD,
+                    FROM_ADDRESS, DASHBOARD_URL, email_configured)
 from exceptions import MailError
 
 
 def send_email(address_list: List[str], subject: str, body: str):
+    if not email_configured():
+        raise MailError(
+            "Email isn't configured — set SMTP_SERVER, SMTP_USERNAME, "
+            "SMTP_PASSWORD and FROM_ADDRESS.")
     try:
         # address_list = ["test1@snowskeleton.net", "test2@snowskeleton.net"]
         msg = MIMEMultipart()

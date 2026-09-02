@@ -7,33 +7,12 @@ from requests import post
 from time import sleep
 
 from commands import schedule_generate, schedule_show
-try:
-    from bot_secrets import BOT_NAME, BOT_ID
-except ImportError:
-    print("\n\t[ERROR] Missing 'bot_secrets.py'.\n")
-    import sys
-    sys.exit(1)
+from config import BOT_ID, BOT_NAME, TIMEZONE
 from exceptions import NoAuthenticationToken
 from log import log
 from models.Event import Event
 from models.Sheet import Sheet
 from storage import get_schedule, get_token, get_group_id
-
-
-def check_secrets():
-    """Ensure all uppercase variables in bot_secrets are non-empty."""
-    try:
-        import bot_secrets
-    except ImportError:
-        print("\n\t[ERROR] Missing 'bot_secrets.py'.\n")
-        import sys
-        sys.exit(1)
-
-    for key in dir(bot_secrets):
-        if key.isupper():
-            value = getattr(bot_secrets, key)
-            if not value:
-                raise ValueError(f"Missing or empty secret: {key}")
 
 
 def to_or_from_the_bot(sender: str, text: str) -> bool:
@@ -61,7 +40,7 @@ def periodic_messages():
 
 
 def send_scheduled_schedule():
-    local_tz = timezone("America/New_York")
+    local_tz = timezone(TIMEZONE)
     cron_schedule = get_schedule()
     if cron_schedule:
         now = datetime.now(local_tz)
@@ -97,7 +76,7 @@ def create_groupme_event(event: Event):
     url = f"https://api.groupme.com/v3/conversations/{group_id}/events/create"
     headers = {"X-Access-Token": token}
 
-    eastern = timezone("America/New_York")
+    eastern = timezone(TIMEZONE)
     # Combine date and time
     start_at = event.date()
     if event.event_time:
@@ -111,7 +90,7 @@ def create_groupme_event(event: Event):
         "name": f"{event.date_str} – Small Group ft. {event.leader}",
         "start_at": start_at.isoformat(),
         "end_at": end_at.isoformat(),
-        "timezone": "America/New_York",
+        "timezone": TIMEZONE,
         "description": event.notes,
         "is_all_day": False,
         "location": {"name": event.location_display}

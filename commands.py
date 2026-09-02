@@ -3,12 +3,7 @@ from typing import Callable
 
 from requests import delete
 
-try:
-    from bot_secrets import CLIENT_ID, REDIRECT_URI
-except ImportError:
-    print("\n\t[ERROR] Missing 'bot_secrets.py'.\n")
-    import sys
-    sys.exit(1)
+from config import CLIENT_ID, REDIRECT_URI
 
 from emailer import send_email
 from log import log

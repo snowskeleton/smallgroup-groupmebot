@@ -1,10 +1,8 @@
 from sqlite3 import connect
 from time import time
 
+from config import DB_PATH
 from exceptions import NoGroupID, NoSheetLink, NoAuthenticationToken
-
-
-DB_PATH = "messages.db"
 
 def init_db():
     conn = connect(DB_PATH)

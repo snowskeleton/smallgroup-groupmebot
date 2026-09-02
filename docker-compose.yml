@@ -1,3 +1,6 @@
+# One service per GroupMe group. Each needs its own env file, its own database
+# volume, and its own public callback URL; they can share the image and the
+# Google service-account credentials.
 services:
   groupmebot:
     build: .
@@ -5,8 +8,35 @@ services:
     ports:
       - "5001:5001"
     restart: always
+    env_file:
+      - .env
     environment:
       - PYTHONUNBUFFERED=1
+      - DB_PATH=/data/messages.db
     volumes:
-      - .:/app
+      - groupmebot-data:/data
+      - ./credentials.json:/app/credentials.json:ro
       - /etc/localtime:/etc/localtime:ro
+
+  # A second group. Uncomment, give it its own env file and volume, and point a
+  # second hostname at port 5002.
+  #
+  # othergroup:
+  #   build: .
+  #   container_name: othergroup
+  #   ports:
+  #     - "5002:5001"
+  #   restart: always
+  #   env_file:
+  #     - groups/othergroup.env
+  #   environment:
+  #     - PYTHONUNBUFFERED=1
+  #     - DB_PATH=/data/messages.db
+  #   volumes:
+  #     - othergroup-data:/data
+  #     - ./credentials.json:/app/credentials.json:ro
+  #     - /etc/localtime:/etc/localtime:ro
+
+volumes:
+  groupmebot-data:
+  # othergroup-data:
