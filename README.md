@@ -58,6 +58,14 @@ horizons, and is what the weekly job runs. `/populate <weeks>` fills a given
 stretch completely — dates and assignments both — for testing or for planning a
 busy month early. `/help` lists everything.
 
+**One-off events.** Add a row on any date you like — a Sunday picnic, a retreat
+months out. Rows that don't fall on `Meeting Day` are never auto-assigned, so an
+extra event costs nobody their turn, and its `Time` is left alone. Write names in
+yourself if you want them, and those count toward the rotation like any other.
+Generation fills in whichever regular meetings are *missing*, so a far-future
+one-off doesn't stall the weeks in between — and because appended rows can land
+below it, turn-taking follows the calendar rather than row position.
+
 **Two horizons.** `Weeks Ahead` (16) is how far out bare dated rows are laid
 down, so there is always somewhere to note a church event or an absence.
 `Assign Ahead` (4) is how far out rotations are actually filled in. Assigning

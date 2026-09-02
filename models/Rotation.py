@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Set, Tuple
 
 WEEKDAYS = ["monday", "tuesday", "wednesday", "thursday",
             "friday", "saturday", "sunday"]
@@ -87,14 +87,21 @@ def parse_weekday(name: str) -> int:
     return 6  # Sunday
 
 
-def meeting_dates(start_after: datetime, through: datetime, weekday: int) -> List[datetime]:
-    """Every occurrence of `weekday` strictly after start_after, up to through."""
-    cursor = start_after + timedelta(days=1)
-    cursor += timedelta(days=(weekday - cursor.weekday()) % 7)
+def meeting_dates(start: datetime, through: datetime, weekday: int,
+                  existing: Optional[Set[str]] = None) -> List[datetime]:
+    """Every occurrence of `weekday` from `start` to `through` that's missing.
+
+    Working from what's absent rather than from the last row means a one-off
+    event dated months out — a retreat, a conference — doesn't stop the regular
+    meetings in between from being generated.
+    """
+    cursor = start + timedelta(days=(weekday - start.weekday()) % 7)
+    existing = existing or set()
 
     dates = []
     while cursor <= through:
-        dates.append(cursor)
+        if cursor.strftime(DATE_FORMAT) not in existing:
+            dates.append(cursor)
         cursor += timedelta(days=7)
     return dates
 
@@ -118,27 +125,66 @@ def blank_rows(headers: List[str], dates: List[datetime],
     return rows
 
 
-def assign_rows(headers: List[str], records: List[Dict[str, str]],
+def fill_times(dated: List[Tuple[int, Dict[str, str]]], default_time: str,
+               weekday: int, today: datetime) -> List[Tuple[int, str, str]]:
+    """Put the default time on any regular meeting that's missing one.
+
+    Time is scaffolding rather than a commitment, so unlike the rotations it is
+    filled as far out as dates go. Doing it here instead of only at row creation
+    means a row created while Config was incomplete gets repaired on the next
+    run rather than staying blank forever.
+
+    Off-day rows are left alone: a Sunday picnic doesn't start at the regular
+    Thursday time.
+    """
+    if not default_time:
+        return []
+
+    updates = []
+    for row_number, record in dated:
+        if str(record.get("Time", "")).strip():
+            continue
+        date = parse_date(record)
+        if date is None or date < today or date.weekday() != weekday:
+            continue
+        record["Time"] = default_time
+        updates.append((row_number, "Time", default_time))
+    return updates
+
+
+def assign_rows(headers: List[str], dated: List[Tuple[int, Dict[str, str]]],
                 rotations: List[Rotation], roster, pools: Dict[str, List[str]],
-                today: datetime, horizon: datetime) -> List[Tuple[int, str, str]]:
-    """Fill blank rotation cells on rows falling inside the assignment horizon.
+                today: datetime, horizon: datetime,
+                weekday: Optional[int] = None) -> List[Tuple[int, str, str]]:
+    """Fill blank rotation cells on regular meetings inside the horizon.
 
-    Returns (record index, column, value) for each cell to write. Cells that
-    already contain anything are left strictly alone — that is the whole safety
-    guarantee, so it lives in the one `continue` below.
+    `dated` is (row number, record) in *date* order, not sheet order — a one-off
+    event added out of band can sit physically below meetings that fall before
+    it, and turn-taking has to follow the calendar rather than the row numbering.
 
-    Assigning late is also what lets a new person start leading soon after
-    they're added, instead of waiting out a queue of pre-assigned months.
+    Rows that aren't on the regular meeting day are skipped. An extra Sunday
+    event isn't part of the rotation, so nobody should spend their turn on it.
+    Typing a name in yourself still works and still counts; the bot just won't
+    volunteer anyone.
+
+    Cells that already contain anything are left strictly alone.
     """
     entry_lists = {r.name: r.entries(roster, pools) for r in rotations}
     updates: List[Tuple[int, str, str]] = []
+    history: List[Dict[str, str]] = []
 
-    for index, record in enumerate(records):
-        try:
-            date = datetime.strptime(str(record.get("Date", "")).strip(), DATE_FORMAT)
-        except ValueError:
+    for row_number, record in dated:
+        date = parse_date(record)
+        if date is None:
             continue
+
+        # Every dated row feeds the cursor, including past ones and off-day
+        # ones a human filled in. Only *assignment* is restricted.
+        history.append(record)
+
         if date < today or date > horizon:
+            continue
+        if weekday is not None and date.weekday() != weekday:
             continue
 
         for rotation in rotations:
@@ -147,29 +193,19 @@ def assign_rows(headers: List[str], records: List[Dict[str, str]],
             if str(record.get(rotation.column, "")).strip():
                 continue
 
-            # Only rows *above* this one set the cursor, so an assignment made
-            # further down the sheet can't reach back and reorder history.
-            value = next_entry(rotation, records[:index],
+            value = next_entry(rotation, history[:-1],
                                entry_lists.get(rotation.name, []))
             if not value:
                 continue
 
             record[rotation.column] = value
-            updates.append((index, rotation.column, value))
+            updates.append((row_number, rotation.column, value))
 
     return updates
 
 
-def last_scheduled_date(history: List[Dict[str, str]]) -> Optional[datetime]:
-    latest = None
-    for row in history:
-        raw = str(row.get("Date", "")).strip()
-        if not raw:
-            continue
-        try:
-            parsed = datetime.strptime(raw, DATE_FORMAT)
-        except ValueError:
-            continue
-        if latest is None or parsed > latest:
-            latest = parsed
-    return latest
+def parse_date(record: Dict[str, str]) -> Optional[datetime]:
+    try:
+        return datetime.strptime(str(record.get("Date", "")).strip(), DATE_FORMAT)
+    except ValueError:
+        return None

@@ -9,8 +9,8 @@ from gspread.utils import rowcol_to_a1
 
 from .Event import Event
 from .Person import Roster
-from .Rotation import (Rotation, assign_rows, blank_rows, last_scheduled_date,
-                       meeting_dates, parse_weekday)
+from .Rotation import (Rotation, assign_rows, blank_rows, fill_times,
+                       meeting_dates, parse_date, parse_weekday)
 from config import CREDENTIALS_PATH
 from log import log
 from storage import get_sheet_link
@@ -184,11 +184,13 @@ class Sheet:
             assign_ahead = self._int_config("Assign Ahead", 4)
 
         today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+        through = today + timedelta(weeks=weeks_ahead)
 
         # --- Phase one: dates ---
-        latest = last_scheduled_date(self.schedule_rows)
-        start_after = max(latest, today) if latest else today
-        dates = meeting_dates(start_after, today + timedelta(weeks=weeks_ahead), weekday)
+        # Generate what's *missing* rather than what's after the last row, so a
+        # one-off event dated months out doesn't stall the regular meetings.
+        existing = {str(r.get("Date", "")).strip() for r in self.schedule_rows}
+        dates = meeting_dates(today, through, weekday, existing)
 
         if dates:
             worksheet.append_rows(
@@ -197,10 +199,18 @@ class Sheet:
             # Re-read so the appended rows come back with real row numbers.
             self._load(spreadsheet)
 
-        # --- Phase two: assignments ---
-        updates = assign_rows(self.schedule_headers, self.schedule_rows,
-                              self.rotations, self.roster, self.pools,
-                              today, today + timedelta(weeks=assign_ahead))
+        # --- Phase two: times and assignments ---
+        # In date order, because an out-of-band row can sit physically below
+        # meetings that come before it.
+        dated = sorted(
+            ((n, r) for n, r in zip(self.schedule_row_numbers, self.schedule_rows)
+             if parse_date(r) is not None),
+            key=lambda pair: parse_date(pair[1]))
+
+        updates = fill_times(dated, default_time, weekday, today)
+        updates += assign_rows(self.schedule_headers, dated, self.rotations,
+                               self.roster, self.pools, today,
+                               today + timedelta(weeks=assign_ahead), weekday)
         if updates:
             self._write_cells(worksheet, updates)
 
@@ -211,7 +221,7 @@ class Sheet:
             parts.append(f"added {len(dates)} date(s) through "
                          f"{dates[-1].strftime('%b %d %Y')}")
         if updates:
-            parts.append(f"filled {len(updates)} assignment(s) for the next "
+            parts.append(f"filled {len(updates)} cell(s), assigning the next "
                          f"{assign_ahead} week(s)")
         if not parts:
             return (f"Nothing to do — dates already run {weeks_ahead} week(s) "
@@ -231,8 +241,7 @@ class Sheet:
         """Write individual cells, addressed by their real position on the tab."""
         column_of = {h: i + 1 for i, h in enumerate(self.schedule_headers)}
         batch = []
-        for record_index, header, value in updates:
-            row = self.schedule_row_numbers[record_index]
+        for row, header, value in updates:
             batch.append({"range": rowcol_to_a1(row, column_of[header]),
                           "values": [[value]]})
         worksheet.batch_update(batch, value_input_option="USER_ENTERED")
