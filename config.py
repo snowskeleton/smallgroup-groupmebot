@@ -22,6 +22,21 @@ except ImportError:
     _legacy = None
 
 
+def _url(key: str, default: str = "") -> str:
+    """A URL setting, guaranteed absolute.
+
+    A schemeless host is a relative link once it lands in an email, and mail
+    clients resolve it against the message rather than the web — Apple Mail
+    turns it into an unopenable x-webdoc:// address. Prepending https is always
+    the right repair: these are public callback URLs, and GroupMe requires TLS
+    on them anyway.
+    """
+    value = _get(key, default).rstrip("/")
+    if value and "://" not in value:
+        value = "https://" + value
+    return value
+
+
 def _get(key: str, default: str = "") -> str:
     value = os.environ.get(key)
     if value is not None:
@@ -36,7 +51,7 @@ BOT_ID = _get("BOT_ID")
 BOT_NAME = _get("BOT_NAME")
 CLIENT_ID = _get("CLIENT_ID")
 CLIENT_SECRET = _get("CLIENT_SECRET")
-REDIRECT_URI = _get("REDIRECT_URI")
+REDIRECT_URI = _url("REDIRECT_URI")
 
 # --- Email ---
 SMTP_SERVER = _get("SMTP_SERVER")
@@ -46,7 +61,7 @@ SMTP_PASSWORD = _get("SMTP_PASSWORD")
 FROM_ADDRESS = _get("FROM_ADDRESS")
 
 # --- Dashboard ---
-DASHBOARD_URL = _get("DASHBOARD_URL").rstrip("/")
+DASHBOARD_URL = _url("DASHBOARD_URL")
 
 # --- Storage ---
 DB_PATH = _get("DB_PATH", "messages.db")

@@ -109,7 +109,7 @@ Fill in `.env`:
 | `SMTP_USERNAME` | for email | Mail account |
 | `SMTP_PASSWORD` | for email | Mail account — use an app password if available |
 | `FROM_ADDRESS` | for email | Address the group sees on emails |
-| `DASHBOARD_URL` | for dashboard | `https://bot.example.com` — **no trailing slash, no path** |
+| `DASHBOARD_URL` | for dashboard | `https://bot.example.com` — scheme included, no trailing slash, no path |
 | `DB_PATH` | | Defaults to `messages.db` |
 | `CREDENTIALS_PATH` | | Defaults to `credentials.json` |
 | `TIMEZONE` | | Defaults to `America/New_York` |
@@ -265,5 +265,6 @@ for this to be usable.
 | Duplicate scheduled posts | More than one gunicorn worker, or two containers running |
 | Posts at the wrong time | Set `TIMEZONE` (defaults to `America/New_York`) |
 | No email | SMTP block empty, or nobody has an address on the `People` tab |
+| Login link won't open, shows `x-webdoc://` | `DASHBOARD_URL` had no `https://`; upgrade and restart |
 | Two instances fighting over settings | They're sharing a database volume; give each its own |
 | Same household hosts every week | Only one household has `Hosts` checked on the `People` tab |
