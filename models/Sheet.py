@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 from threading import Lock
 from time import time
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from google.oauth2.service_account import Credentials
 from gspread import Spreadsheet, Worksheet, authorize
@@ -148,7 +148,8 @@ class Sheet:
 
     # --- Writing ---
 
-    def generate_schedule(self) -> str:
+    def generate_schedule(self, weeks_ahead: Optional[int] = None,
+                          assign_ahead: Optional[int] = None) -> str:
         """Lay down dates far out, then assign rotations only for the near term.
 
         Two horizons, because they answer different questions: `Weeks Ahead` is
@@ -159,9 +160,10 @@ class Sheet:
         never changes a cell that already has something in it.
         """
         with self._write_lock:
-            return self._generate_schedule()
+            return self._generate_schedule(weeks_ahead, assign_ahead)
 
-    def _generate_schedule(self) -> str:
+    def _generate_schedule(self, weeks_ahead: Optional[int],
+                           assign_ahead: Optional[int]) -> str:
         spreadsheet = self._open()
         self._load(spreadsheet)
         self._fetched_at = time()
@@ -174,8 +176,12 @@ class Sheet:
         worksheet = spreadsheet.worksheet(SCHEDULE_TAB)
         weekday = parse_weekday(self.config_value("Meeting Day", "Sunday"))
         default_time = self.config_value("Default Time", "")
-        weeks_ahead = self._int_config("Weeks Ahead", 16)
-        assign_ahead = self._int_config("Assign Ahead", 4)
+        # Explicit horizons win over the Config tab, so /populate can reach
+        # further than the weekly job normally would.
+        if weeks_ahead is None:
+            weeks_ahead = self._int_config("Weeks Ahead", 16)
+        if assign_ahead is None:
+            assign_ahead = self._int_config("Assign Ahead", 4)
 
         today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
 
@@ -208,8 +214,8 @@ class Sheet:
             parts.append(f"filled {len(updates)} assignment(s) for the next "
                          f"{assign_ahead} week(s)")
         if not parts:
-            return (f"Nothing to do — dates run {weeks_ahead} weeks out and the "
-                    f"next {assign_ahead} weeks are assigned.")
+            return (f"Nothing to do — dates already run {weeks_ahead} week(s) "
+                    f"out, and the next {assign_ahead} week(s) are assigned.")
 
         summary = "Schedule updated: " + ", ".join(parts) + "."
         log("INFO", "sheet", summary)

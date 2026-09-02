@@ -12,6 +12,9 @@ from models.Sheet import Sheet
 from storage import get_all_messages, clear_messages, get_token, save_schedule, save_sheet_link
 
 
+# A typo like /populate 500 would append ten years of rows, so cap it.
+MAX_POPULATE_WEEKS = 104
+
 _command_registry: list[Callable[[str, str], str]] = []
 
 def command(func: Callable[[str, str], str]):
@@ -116,6 +119,26 @@ def help(sender: str, args: str) -> str:
 def ping(sender: str, args: str) -> str:
     """Responds with 'Pong!'."""
     return "Pong!"
+
+
+@command
+def populate(sender: str, args: str) -> str:
+    """Fill the schedule out <weeks> weeks from now, dates and assignments. Usage: /populate [weeks]"""
+    weeks = args.strip()
+    if not weeks:
+        return schedule_generate()
+
+    if not weeks.isdigit() or not 1 <= int(weeks) <= MAX_POPULATE_WEEKS:
+        return (f"Please give a number of weeks between 1 and "
+                f"{MAX_POPULATE_WEEKS}. Usage: /populate [weeks]")
+
+    try:
+        # Both horizons move together: "fill out the next 5 weeks" means those
+        # weeks are done, not just dated.
+        return Sheet.get_instance().generate_schedule(
+            weeks_ahead=int(weeks), assign_ahead=int(weeks))
+    except NoSheetLink as e:
+        return repr(e)
 
 
 @command

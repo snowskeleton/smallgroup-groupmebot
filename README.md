@@ -53,6 +53,11 @@ is editing it; the short version:
 * `Config` — `Meeting Day`, `Default Time`, `Weeks Ahead`, `Assign Ahead`.
 * `README` — ignored by the bot.
 
+**Commands.** `/schedule generate` tops the sheet up to the configured
+horizons, and is what the weekly job runs. `/populate <weeks>` fills a given
+stretch completely — dates and assignments both — for testing or for planning a
+busy month early. `/help` lists everything.
+
 **Two horizons.** `Weeks Ahead` (16) is how far out bare dated rows are laid
 down, so there is always somewhere to note a church event or an absence.
 `Assign Ahead` (4) is how far out rotations are actually filled in. Assigning

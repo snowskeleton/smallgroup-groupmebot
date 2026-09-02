@@ -232,8 +232,19 @@ In the group chat:
 6. ```
    /schedule generate
    ```
-   Fills the sheet with dates and near-term assignments. Open the sheet and
-   confirm it looks right before leaving it to run on its own.
+   Fills the sheet with dates out to `Weeks Ahead` and assignments out to
+   `Assign Ahead`. This is what the weekly job runs. Open the sheet and confirm
+   it looks right before leaving it to run on its own.
+
+   To fill a specific stretch completely — dates *and* assignments — use:
+
+   ```
+   /populate 5
+   ```
+
+   Handy for testing, or for pinning down a busy month early. Note that it
+   assigns as far as you ask, so `/populate 16` commits everyone four months
+   out; clear a cell if you want it reassigned later.
 
 `/help` lists everything.
 
