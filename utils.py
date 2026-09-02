@@ -6,7 +6,7 @@ from typing import Dict
 from requests import post
 from time import sleep
 
-from commands import schedule_show
+from commands import schedule_generate, schedule_show
 try:
     from bot_secrets import BOT_NAME, BOT_ID
 except ImportError:
@@ -70,11 +70,17 @@ def send_scheduled_schedule():
         base = now.replace(second=0, microsecond=0)
 
         if croniter.match(cron_schedule, base):
-            send_message(schedule_show("3"))
+            # Top the sheet up first, so the post reflects any rows we just
+            # added. Generation only appends, so running it repeatedly is safe.
+            try:
+                log("INFO", "utils", schedule_generate())
+            except Exception as e:
+                log("ERROR", "utils", f"Failed to generate schedule: {e}")
+            send_message(schedule_show("3", email=True))
 
 
 def send_next_calendar_event(count: int = 1):
-    sheet = Sheet()
+    sheet = Sheet.get_instance()
     for event in sheet.upcoming_events(count):
         create_groupme_event(event)
 

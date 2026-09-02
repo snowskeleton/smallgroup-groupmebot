@@ -34,3 +34,36 @@ To authorize it to send some commands, run
 * `/authenticate`
 * * Have an admin or owner follow the link provided
 * `/schedule link <Google Sheets sheet link>`
+
+### The spreadsheet
+The bot reads five tabs. The sheet's own `README` tab documents them for whoever
+is editing it; the short version:
+
+* `Schedule` — one row per meeting. The bot **only appends** rows below the last
+  one, never edits or deletes. Human changes are always final.
+* `People` — one row per person. `Household` groups spouses so a couple gets one
+  turn, not two. Checkbox columns are per-rotation opt-ins.
+* `Rotations` — `Rotation | Column | Pool | Opt-in`. `Pool` is `People`,
+  `Households`, or the name of another tab holding a plain ordered list, which
+  is how group-level rotations work without a code change.
+* `Config` — `Meeting Day`, `Default Time`, `Weeks Ahead`, `Assign Ahead`.
+* `README` — ignored by the bot.
+
+**Two horizons.** `Weeks Ahead` (16) is how far out bare dated rows are laid
+down, so there is always somewhere to note a church event or an absence.
+`Assign Ahead` (4) is how far out rotations are actually filled in. Assigning
+late keeps commitments short and lets a newly added person start leading within
+about a month rather than waiting out a queue of pre-filled turns.
+
+**The bot only ever writes into a blank cell.** It never changes or deletes
+anything a human typed. A blank cell therefore means "unassigned" — use a dash
+to hold a week deliberately empty, and clear a cell to request a re-assignment.
+
+**Row order is rotation order.** There is no stored cursor: the bot finds the
+most recent value *above* the row it's filling, locates it in that rotation's
+pool, and takes the next one down. Reorder a rotation by dragging rows in
+`People`. A `Location` the bot can't resolve to a household (`Panera`) is
+printed as-is and costs nobody their turn, but a near-miss is logged as a likely
+typo.
+
+The service account needs **Editor** access on the sheet, since it appends rows.
