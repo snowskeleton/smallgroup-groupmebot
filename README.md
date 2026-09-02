@@ -1,5 +1,9 @@
 This robot monitors a Google Sheets spreadsheet and sends messages about it to a GroupMe group.
 
+**Setting up a new bot?** See [SETUP.md](SETUP.md) for start-to-finish instructions,
+including registering the bot, the OAuth application, service-account access, and
+cloning the spreadsheet for another group.
+
 Setup like so:
 
 ### Prerequisites
