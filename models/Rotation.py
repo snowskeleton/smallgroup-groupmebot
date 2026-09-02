@@ -39,29 +39,44 @@ class Rotation:
 
 def next_entry(rotation: Rotation, history: List[Dict[str, str]],
                entries: List[str]) -> str:
-    """Whose turn is it.
+    """Whose turn is it: whoever has gone longest without one.
 
-    There is no stored cursor. We scan the schedule upward for the most recent
-    value that matches something in the pool, and take the next one down,
-    wrapping at the bottom.
+    There is no stored cursor. We read the schedule above this row, note when
+    each pool member last came up, and pick the one who has waited longest.
+    Anyone who has never come up sorts first; ties break on order in the sheet,
+    so a rotation with no history yet runs straight down the People tab.
 
-    Values that aren't in the pool are skipped rather than treated as a
-    position. That is what makes an off-site week ("Panera") free: nobody loses
-    their turn, because the rotation reads straight past it to the last real
-    entry. It also means a human-entered substitute who isn't in the pool
-    doesn't derail the sequence.
+    With nobody swapped this is identical to walking the list in order — the
+    person who last went is by definition the least recently used. Where it
+    differs is when a human edits the schedule.
+
+    Say the pool is Jessica, Levi, Sara, Christine, and Jessica covers for
+    Christine in week 4. Taking "the next one after the most recent" would read
+    Jessica in week 4 and hand week 5 to Levi, which quietly costs Christine
+    her turn — she'd wait until week 7, and end a cycle short. Here Christine
+    still hasn't had a turn, so she simply goes next.
+
+    The same property makes a newly added person start soon rather than waiting
+    out the existing queue, and makes an off-site week free: a Location like
+    "Panera" belongs to no pool member, so it updates nobody's last-served
+    position and the rotation carries on as though that week hadn't happened.
     """
     if not entries:
         return ""
 
-    index = {value.strip().lower(): i for i, value in enumerate(entries)}
-
-    for row in reversed(history):
+    order = {entry.strip().lower(): i for i, entry in enumerate(entries)}
+    last_served: Dict[str, int] = {}
+    for position, row in enumerate(history):
         value = str(row.get(rotation.column, "")).strip().lower()
-        if value in index:
-            return entries[(index[value] + 1) % len(entries)]
+        if value:
+            last_served[value] = position
 
-    return entries[0]
+    def staleness(entry: str):
+        key = entry.strip().lower()
+        # -1 for never served, so they come before anyone with a real turn.
+        return (last_served.get(key, -1), order[key])
+
+    return min(entries, key=staleness)
 
 
 def parse_weekday(name: str) -> int:

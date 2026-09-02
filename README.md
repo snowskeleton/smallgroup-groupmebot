@@ -68,11 +68,20 @@ about a month rather than waiting out a queue of pre-filled turns.
 anything a human typed. A blank cell therefore means "unassigned" — use a dash
 to hold a week deliberately empty, and clear a cell to request a re-assignment.
 
-**Row order is rotation order.** There is no stored cursor: the bot finds the
-most recent value *above* the row it's filling, locates it in that rotation's
-pool, and takes the next one down. Reorder a rotation by dragging rows in
-`People`. A `Location` the bot can't resolve to a household (`Panera`) is
-printed as-is and costs nobody their turn, but a near-miss is logged as a likely
-typo.
+**Whoever has gone longest without a turn goes next.** There is no stored
+cursor — the bot reads the schedule above each row, notes when each pool member
+last came up, and picks the one who has waited longest. Anyone who has never
+come up sorts first; ties break on order in `People`, so a rotation with no
+history runs straight down that tab.
+
+Left alone this is just a lap of the list. It differs when a human edits the
+schedule: if someone covers for the person whose turn it was, that person still
+hasn't had a turn, so they go next rather than dropping to the back of the
+queue. It's also why a newly added person starts soon instead of waiting out the
+existing cycle.
+
+A `Location` the bot can't resolve to a household (`Panera`) is printed as-is,
+updates nobody's last-served position, and so costs nobody their turn — but a
+near-miss is logged as a likely typo.
 
 The service account needs **Editor** access on the sheet, since it appends rows.
